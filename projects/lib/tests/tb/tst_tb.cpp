@@ -15,7 +15,9 @@ class tst_Tb: public QObject
 		
 		void positions_data() const;
 		void positions();
-		
+		void sevenPiecePositions_data() const;
+		void sevenPiecePositions();
+
 		void cleanupTestCase();
 		
 	private:
@@ -116,6 +118,39 @@ void tst_Tb::positions()
 	unsigned int tbDtz = 0;
 	QCOMPARE(m_board.tablebaseResult(&tbDtz).toShortString(), result);
 	QCOMPARE(int(tbDtz), dtz);
+}
+
+void tst_Tb::sevenPiecePositions_data() const
+{
+	QTest::addColumn<QString>("fen");
+	QTest::addColumn<QString>("result");
+	QTest::addColumn<int>("dtz");
+
+	// Requires KNNNNNvK and KNNNNvK in addition to the 3-5 piece tables.
+	QTest::newRow("knnnnnk_w")
+		<< "7k/8/8/8/8/8/8/KNNNNN2 w - - 0 1"
+		<< "1-0"
+		<< 17;
+	QTest::newRow("knnnnnk_b")
+		<< "7k/8/8/8/8/8/8/KNNNNN2 b - - 0 1"
+		<< "1-0"
+		<< 18;
+	QTest::newRow("knnnnnk_capture")
+		<< "8/8/8/8/8/8/2k5/KNNNNN2 b - - 0 1"
+		<< "1-0"
+		<< 1;
+	QTest::newRow("knnnnnk_rule50")
+		<< "7k/8/8/8/8/8/8/KNNNNN2 w - - 90 1"
+		<< "1/2-1/2"
+		<< 17;
+}
+
+void tst_Tb::sevenPiecePositions()
+{
+	if (!SyzygyTablebase::tbAvailable(7))
+		QSKIP("7-piece tablebases not available");
+
+	positions();
 }
 
 QTEST_MAIN(tst_Tb)
