@@ -115,10 +115,10 @@ typedef HANDLE map_t;
 #define TB_SOFTWARE_POP_COUNT
 #elif defined (__GNUC__) && defined(__x86_64__) && defined(__SSE4_2__)
 #include <popcntintrin.h>
-#define popcount(x)             _mm_popcnt_u64((x))
+#define popcount(x)             (int)_mm_popcnt_u64((x))
 #elif defined(_MSC_VER) && (_MSC_VER >= 1500) && defined(_M_AMD64)
 #include <nmmintrin.h>
-#define popcount(x)             _mm_popcnt_u64((x))
+#define popcount(x)             (int)_mm_popcnt_u64((x))
 #else
 #define TB_SOFTWARE_POP_COUNT
 #endif
@@ -302,8 +302,16 @@ static FD open_tb(const char *str, const char *suffix)
 #ifndef _WIN32
     fd = open(file, O_RDONLY);
 #else
+#ifdef _UNICODE
+    wchar_t ucode_name[4096];
+    size_t len;
+    mbstowcs_s(&len, ucode_name, 4096, file, _TRUNCATE);
+    fd = CreateFile(ucode_name, GENERIC_READ, FILE_SHARE_READ, NULL,
+			  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+#else
     fd = CreateFile(file, GENERIC_READ, FILE_SHARE_READ, NULL,
 			  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+#endif
 #endif
     free(file);
     if (fd != FD_ERR) {
@@ -958,15 +966,16 @@ bool tb_init(const char *path)
           }
 
 finished:
+  /* TBD - assumes UCI
+  printf("info string Found %d WDL, %d DTM and %d DTZ tablebase files.\n",
+      numWdl, numDtm, numDtz);
+  fflush(stdout);
+  */
   // Set TB_LARGEST, for backward compatibility with pre-7-man Fathom
   TB_LARGEST = (unsigned)TB_MaxCardinality;
   if ((unsigned)TB_MaxCardinalityDTM > TB_LARGEST) {
     TB_LARGEST = TB_MaxCardinalityDTM;
   }
-  /* TBD - assumes UCI*/
-  printf("info string Found %d WDL, %d DTM and %d DTZ tablebase files. TB_PIECES = %d. TB_LARGEST = %d.\n",
-      numWdl, numDtm, numDtz, TB_PIECES, TB_LARGEST);
-  fflush(stdout);
   return true;
 }
 
