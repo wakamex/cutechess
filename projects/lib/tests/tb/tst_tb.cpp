@@ -22,6 +22,7 @@ class tst_Tb: public QObject
 		
 	private:
 		Chess::StandardBoard m_board;
+		bool m_hasDtz = false;
 };
 
 
@@ -33,6 +34,7 @@ void tst_Tb::initTestCase()
 		QSKIP("Syzygy tablebases not available");
 
 	SyzygyTablebase::initialize(path);
+	m_hasDtz = !dir.entryList({"*.rtbz"}, QDir::Files).isEmpty();
 }
 
 void tst_Tb::cleanupTestCase()
@@ -114,6 +116,14 @@ void tst_Tb::positions()
 	QFETCH(int, dtz);
 
 	QVERIFY(m_board.setFenString(fen));
+
+	// WDL tables alone give no DTZ and can't probe after reversible moves
+	if (!m_hasDtz)
+	{
+		dtz = 0;
+		if (m_board.reversibleMoveCount() > 0)
+			result = "*";
+	}
 	
 	unsigned int tbDtz = 0;
 	QCOMPARE(m_board.tablebaseResult(&tbDtz).toShortString(), result);
